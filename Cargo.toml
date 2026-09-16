@@ -1,0 +1,35 @@
+[package]
+name = "loop_edit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# GUI
+eframe = { version = "0.30", features = ["wgpu"] }
+egui = "0.30"
+egui_plot = "0.30"
+
+# Audio I/O
+pipewire = { version = "0.10", features = ["v0_3_44"] }
+libpulse-binding = "2.28"
+libpulse-simple-binding = "2.28"
+hound = "3.5"
+
+# Concurrency
+crossbeam = "0.8"
+parking_lot = "0.12"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+
+# Utilities
+directories = "5.0"
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.11"
+chrono = "0.4"
+
+[profile.release]
+opt-level = 3
+lto = true

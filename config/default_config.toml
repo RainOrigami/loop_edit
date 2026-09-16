@@ -1,0 +1,30 @@
+# Loop Edit Configuration File
+# Auto-generated on first run
+
+[audio]
+# PipeWire device names (partial match)
+# Examples: "pipewire", "monitor", "mic", "Mic"
+# List candidates with: pw-cli list-objects | grep node.name
+capture_device = "pipewire"  # e.g. "<sink-name>.monitor" to record app audio
+playback_device = "default"
+sample_rate = 48000
+channels = 2
+
+[buffer]
+# Duration of the loop buffer in seconds
+duration_seconds = 60
+
+[output]
+# Folder where WAV files will be saved (use ~ for home directory)
+default_folder = "~/Music/LoopRecordings"
+# Filename pattern (strftime format)
+# %Y=year, %m=month, %d=day, %H=hour, %M=minute, %S=second
+filename_pattern = "loop_%Y%m%d_%H%M%S.wav"
+# Bit depth: 16 or 24
+bit_depth = 16
+# Gain applied on export in dB (0.0 = no change, 3.0 = +3dB)
+gain_db = 0.0
+
+[ui]
+# Waveform color in RGBA format
+waveform_color = [0, 255, 0, 255]  # Green
