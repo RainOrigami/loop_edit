@@ -2,6 +2,8 @@
 pub struct AudioRingBuffer {
     buffer: Vec<f32>,
     write_pos: usize,
+    /// Samples written since creation; tells readers what is new.
+    total_written: u64,
     capacity_samples: usize,
     sample_rate: u32,
     channels: u16,
@@ -23,6 +25,7 @@ impl AudioRingBuffer {
         Self {
             buffer: vec![0.0; capacity_samples],
             write_pos: 0,
+            total_written: 0,
             capacity_samples,
             sample_rate,
             channels,
@@ -36,6 +39,27 @@ impl AudioRingBuffer {
             self.buffer[self.write_pos] = sample;
             self.write_pos = (self.write_pos + 1) % self.capacity_samples;
         }
+        self.total_written += samples.len() as u64;
+    }
+
+    /// Samples written since creation.
+    pub fn total_written(&self) -> u64 {
+        self.total_written
+    }
+
+    /// Like `snapshot`, but leaves out the silence in front of the first
+    /// sample when the buffer has not been filled yet.
+    pub fn snapshot_recorded(&self) -> Vec<f32> {
+        let recorded = self.total_written.min(self.capacity_samples as u64) as usize;
+        self.read_latest(recorded)
+    }
+
+    /// The samples written after `since` (a `total_written` value), at most
+    /// one buffer's worth, and the `total_written` to pass next time.
+    pub fn read_since(&self, since: u64) -> (Vec<f32>, u64) {
+        let new = self.total_written.saturating_sub(since);
+        let n = new.min(self.capacity_samples as u64) as usize;
+        (self.read_latest(n), self.total_written)
     }
 
     /// Create a snapshot of the current buffer state
@@ -65,10 +89,9 @@ impl AudioRingBuffer {
         };
 
         // Read in circular fashion
-        for i in 0..num_samples {
-            let idx = (start + i) % self.capacity_samples;
-            result.push(self.buffer[idx]);
-        }
+        let first = (self.capacity_samples - start).min(num_samples);
+        result.extend_from_slice(&self.buffer[start..start + first]);
+        result.extend_from_slice(&self.buffer[..num_samples - first]);
 
         result
     }
@@ -150,6 +173,21 @@ mod tests {
         for i in 0..9 {
             assert!(snapshot[i] < snapshot[i + 1], "Not in chronological order");
         }
+    }
+
+    #[test]
+    fn test_read_since_and_recorded() {
+        let mut buf = AudioRingBuffer::new(1.0, 10, 1);
+        buf.write_samples(&[1.0, 2.0, 3.0]);
+        assert_eq!(buf.snapshot_recorded(), vec![1.0, 2.0, 3.0]);
+        let (new, at) = buf.read_since(0);
+        assert_eq!((new, at), (vec![1.0, 2.0, 3.0], 3));
+        buf.write_samples(&(4..=15).map(|i| i as f32).collect::<Vec<_>>());
+        // More arrived than fits: only the latest buffer's worth.
+        let (new, at) = buf.read_since(at);
+        assert_eq!(new.len(), 10);
+        assert_eq!((new[0], at), (6.0, 15));
+        assert_eq!(buf.read_since(at).0.len(), 0);
     }
 
     #[test]

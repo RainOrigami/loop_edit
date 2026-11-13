@@ -9,6 +9,7 @@ pub struct Config {
     pub audio: AudioConfig,
     pub buffer: BufferConfig,
     pub output: OutputConfig,
+    #[serde(default)]
     pub ui: UiConfig,
 }
 
@@ -34,9 +35,10 @@ pub struct OutputConfig {
     pub gain_db: f32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct UiConfig {
-    pub waveform_color: [u8; 4]
+    /// RGBA; the desktop's accent colour when left out.
+    pub waveform_color: Option<[u8; 4]>,
 }
 
 impl Config {

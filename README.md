@@ -21,9 +21,10 @@ running in the background the whole time, so you never miss what happens next.
 ## Requirements
 
 - Linux with PipeWire (PulseAudio works through the compatibility layer)
-- A GPU with Vulkan/OpenGL for the egui/wgpu front-end
-- Build: Rust toolchain, `libpipewire-0.3-dev`, `libpulse-dev`, `libclang-dev`,
-  `pkg-config` (Arch: `pipewire libpulse clang pkgconf`)
+- GTK 4.16+ and libadwaita 1.6+
+- Build: Rust toolchain, `libgtk-4-dev`, `libadwaita-1-dev`, `libpipewire-0.3-dev`,
+  `libpulse-dev`, `libclang-dev`, `pkg-config`
+  (Arch: `gtk4 libadwaita pipewire libpulse clang pkgconf`)
 
 ## Install
 
@@ -41,9 +42,17 @@ Prebuilt x86_64 binaries are attached to [each release](../../releases).
 Run `loop_edit`. On first start it writes `~/.config/loop_edit/config.toml` and
 begins recording from the configured device.
 
-- **Capture & Edit** freezes the current buffer; recording continues underneath.
-- Drag the start/end markers, then **Save WAV**.
-- **Back to Recording** returns to the live view — you can capture again at once.
+- **Capture** (Space) freezes the buffer; recording continues underneath. The
+  last 10 seconds start out selected.
+- Drag anywhere on the waveform for a new selection, drag its edges to adjust,
+  double-click to select everything.
+- **Trim** (`T`) snaps each edge to the nearest border between silence and
+  sound: inwards from silence, outwards from the middle of a sound. Select a
+  rough area around a voice clip and press `T`.
+- Scroll to zoom around the pointer; Shift+scroll or a sideways swipe pans.
+  The strip at the bottom shows the whole capture — click or drag it to jump.
+  `Z` zooms to the selection, `0` shows everything.
+- Space plays the selection, Ctrl+S saves it, Esc goes back to recording.
 
 Run it from a terminal to see capture and export logs.
 
@@ -69,7 +78,7 @@ bit_depth = 16                                 # 16 or 24
 gain_db = 0.0                                  # applied on export
 
 [ui]
-waveform_color = [0, 255, 0, 255]              # RGBA
+# waveform_color = [0, 255, 0, 255]            # RGBA; desktop accent if unset
 ```
 
 ### Picking a capture device
@@ -88,9 +97,9 @@ So a virtual sink named `comms` that your chat client outputs to becomes
 
 ## Design notes
 
-- Three threads: GUI at display rate, a real-time capture thread, and a
-  downsampler that feeds the waveform at ~10 Hz. The capture thread never blocks
-  on the GUI.
+- Two threads: the GTK main loop and the capture thread. Each frame the live
+  view copies only what arrived since the last one and summarises it in 10 ms
+  bins, so the lock is held for microseconds.
 - ~25 MB of RAM for 60 s of 48 kHz stereo — the buffer is plain interleaved f32.
 - Editing operates on a snapshot copy, which is why capture can continue while
   you drag markers around.

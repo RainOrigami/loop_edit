@@ -26,5 +26,5 @@ bit_depth = 16
 gain_db = 0.0
 
 [ui]
-# Waveform color in RGBA format
-waveform_color = [0, 255, 0, 255]  # Green
+# Waveform color in RGBA format; follows the desktop accent color if unset
+# waveform_color = [0, 255, 0, 255]  # Green

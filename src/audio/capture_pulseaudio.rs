@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use libpulse_binding as pulse;
 use libpulse_simple_binding as psimple;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -11,6 +11,7 @@ use super::ring_buffer::AudioRingBuffer;
 pub struct AudioCapture {
     thread_handle: Option<std::thread::JoinHandle<()>>,
     should_stop: Arc<AtomicBool>,
+    error: Arc<Mutex<Option<String>>>,
 }
 
 impl AudioCapture {
@@ -32,18 +33,27 @@ impl AudioCapture {
 
         let should_stop = Arc::new(AtomicBool::new(false));
         let should_stop_clone = should_stop.clone();
+        let error = Arc::new(Mutex::new(None));
+        let error_clone = error.clone();
 
         // Spawn audio capture thread
         let thread_handle = std::thread::spawn(move || {
             if let Err(e) = run_capture_loop(device_name, sample_rate, channels, ring_buffer, should_stop_clone) {
                 log::error!("Audio capture error: {}", e);
+                *error_clone.lock() = Some(format!("{e:#}"));
             }
         });
 
         Ok(AudioCapture {
             thread_handle: Some(thread_handle),
             should_stop,
+            error,
         })
+    }
+
+    /// Why capture stopped, if it did.
+    pub fn error(&self) -> Option<String> {
+        self.error.lock().clone()
     }
 
     /// List all available PulseAudio/PipeWire audio sources

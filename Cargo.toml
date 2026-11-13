@@ -1,13 +1,12 @@
 [package]
 name = "loop_edit"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-# GUI
-eframe = { version = "0.30", features = ["wgpu"] }
-egui = "0.30"
-egui_plot = "0.30"
+# GUI. Feature flags stay at what Debian 13 ships: GTK 4.18, libadwaita 1.7.
+gtk = { package = "gtk4", version = "0.11", features = ["v4_16"] }
+adw = { package = "libadwaita", version = "0.9", features = ["v1_6"] }
 
 # Audio I/O
 pipewire = { version = "0.10", features = ["v0_3_44"] }
